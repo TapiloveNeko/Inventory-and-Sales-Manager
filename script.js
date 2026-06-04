@@ -2,11 +2,13 @@ const InventoryApp = {
   STORAGE_KEY: 'inventory-management-data',
   WIDTHS_KEY: 'inventory-column-widths-v3',
   THEME_KEY: 'inventory-theme',
+  FIRESTORE_COLLECTION: 'inventory',   // Firestoreのコレクション名
+  FIRESTORE_DOC: 'rows',               // ドキュメント名（全行をひとつのドキュメントに保存）
   MIN_COL_WIDTH: 40,
   MAX_COL_WIDTH: 600,
   RESIZE_EDGE_PX: 8,
   MAX_IMAGES: 2,
-  SAVE_DEBOUNCE_MS: 400,
+  SAVE_DEBOUNCE_MS: 800,               // Firestore向けに少し長めに設定
   UNDO_DELETE_LIMIT: 20,
 
   COLUMNS: [
@@ -26,6 +28,8 @@ const InventoryApp = {
     { key: 'bodyWeight', label: '本体重量', width: 100, kind: 'unit', unit: 'g' },
     { key: 'weight', label: '梱包重量', width: 100, kind: 'unit', unit: 'g' },
     { key: 'profitLoss', label: '粗利', width: 110, kind: 'calcProfit', thClass: 'col-money col-calc' },
+    { key: 'buyerCountry', label: '落札者の国名', width: 140, kind: 'text' },
+    { key: 'buyerName', label: '落札者名', width: 140, kind: 'text' },
     { key: 'actions', label: '操作', width: 56, kind: 'actions', thClass: 'col-actions' },
   ],
 
@@ -70,6 +74,7 @@ const InventoryApp = {
   saveTimer: null,
   columnWidths: {},
   els: {},
+  db: null,  // Firestoreインスタンス
 
   get DIGIT_FIELDS() {
     return new Set(this.COLUMNS.filter((c) => c.kind === 'digits' || c.kind === 'money' || c.kind === 'unit').map((c) => c.key));
@@ -111,7 +116,112 @@ const InventoryApp = {
     });
   },
 
-  init() {
+  // =========================================================
+  // Firebase 初期化
+  // =========================================================
+  initFirebase() {
+    try {
+      // firebase-config.js で定義された firebaseConfig を使用
+      if (typeof firebaseConfig === 'undefined') {
+        console.error('firebase-config.js が読み込まれていないか、firebaseConfig が未定義です');
+        return false;
+      }
+      const app = firebase.initializeApp(firebaseConfig);
+      this.db = firebase.firestore(app);
+      return true;
+    } catch (err) {
+      console.error('Firebase初期化エラー:', err);
+      return false;
+    }
+  },
+
+  // =========================================================
+  // Firestore 保存
+  // =========================================================
+  saveToStorage() {
+    this.setSaveIndicator('saving');
+    clearTimeout(this.saveTimer);
+    this.saveTimer = setTimeout(async () => {
+      // Firestore が使えない場合は localStorage にフォールバック
+      if (!this.db) {
+        try {
+          localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.rows));
+          this.setSaveIndicator('saved');
+        } catch (err) {
+          console.error('localStorage保存エラー:', err);
+          this.setSaveIndicator('error');
+        }
+        return;
+      }
+
+      try {
+        // Firestoreの1ドキュメントは最大1MBのため、
+        // 行数が多い場合や画像が多い場合は行ごとにドキュメントを分けてください。
+        // ここでは全行をひとつのドキュメントにまとめるシンプルな実装です。
+        await this.db
+          .collection(this.FIRESTORE_COLLECTION)
+          .doc(this.FIRESTORE_DOC)
+          .set({ rows: this.rows });
+        this.setSaveIndicator('saved');
+      } catch (err) {
+        console.error('Firestore保存エラー:', err);
+        this.setSaveIndicator('error');
+      }
+    }, this.SAVE_DEBOUNCE_MS);
+  },
+
+  // =========================================================
+  // Firestore 読み込み
+  // =========================================================
+  async loadFromStorage() {
+    // Firestore が使えない場合は localStorage にフォールバック
+    if (!this.db) {
+      try {
+        const raw = localStorage.getItem(this.STORAGE_KEY);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return [];
+        return parsed.map((row) => ({
+          ...row,
+          images: Array.isArray(row.images) ? row.images.slice(0, this.MAX_IMAGES) : [],
+        }));
+      } catch {
+        return [];
+      }
+    }
+
+    try {
+      const doc = await this.db
+        .collection(this.FIRESTORE_COLLECTION)
+        .doc(this.FIRESTORE_DOC)
+        .get();
+
+      if (!doc.exists) return [];
+      const data = doc.data();
+      if (!Array.isArray(data?.rows)) return [];
+      return data.rows.map((row) => ({
+        ...row,
+        images: Array.isArray(row.images) ? row.images.slice(0, this.MAX_IMAGES) : [],
+      }));
+    } catch (err) {
+      console.error('Firestore読み込みエラー:', err);
+      // Firestoreが失敗したらlocalStorageから試みる
+      try {
+        const raw = localStorage.getItem(this.STORAGE_KEY);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+  },
+
+  // =========================================================
+  // 以下はオリジナルから変更なし
+  // =========================================================
+
+  async init() {
     this.cacheElements();
     this.buildSummary();
     this.buildTableHead();
@@ -122,7 +232,11 @@ const InventoryApp = {
     this.initWheelPassthrough();
     this.initLightbox();
     this.bindHeaderActions();
-    this.rows = this.loadFromStorage();
+
+    // Firebase初期化してからデータ読み込み
+    this.initFirebase();
+    this.setSaveIndicator('loading');
+    this.rows = await this.loadFromStorage();
     this.updateHistoryButtons();
     this.renderTable();
   },
@@ -423,41 +537,15 @@ const InventoryApp = {
     const el = this.els.saveIndicator;
     if (!el) return;
     el.classList.remove('is-saving', 'is-saved');
-    if (state === 'saving') {
+    if (state === 'loading') {
+      el.textContent = '読み込み中...';
+      el.classList.add('is-saving');
+    } else if (state === 'saving') {
       el.textContent = '保存中...';
       el.classList.add('is-saving');
     } else {
-      el.textContent = state === 'error' ? '保存エラー（容量不足の可能性）' : '保存済み';
+      el.textContent = state === 'error' ? '保存エラー（接続またはデータ容量を確認）' : '保存済み';
       if (state === 'saved') el.classList.add('is-saved');
-    }
-  },
-
-  saveToStorage() {
-    this.setSaveIndicator('saving');
-    clearTimeout(this.saveTimer);
-    this.saveTimer = setTimeout(() => {
-      try {
-        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.rows));
-        this.setSaveIndicator('saved');
-      } catch (err) {
-        console.error('保存に失敗しました:', err);
-        this.setSaveIndicator('error');
-      }
-    }, this.SAVE_DEBOUNCE_MS);
-  },
-
-  loadFromStorage() {
-    try {
-      const raw = localStorage.getItem(this.STORAGE_KEY);
-      if (!raw) return [];
-      const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed)) return [];
-      return parsed.map((row) => ({
-        ...row,
-        images: Array.isArray(row.images) ? row.images.slice(0, this.MAX_IMAGES) : [],
-      }));
-    } catch {
-      return [];
     }
   },
 

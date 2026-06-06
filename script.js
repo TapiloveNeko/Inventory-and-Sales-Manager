@@ -2,23 +2,23 @@ const InventoryApp = {
   STORAGE_KEY: 'inventory-management-data',
   WIDTHS_KEY: 'inventory-column-widths-v3',
   THEME_KEY: 'inventory-theme',
-  FIRESTORE_COLLECTION: 'inventory',   // Firestoreのコレクション名
-  FIRESTORE_DOC: 'rows',               // ドキュメント名（全行をひとつのドキュメントに保存）
+  FIRESTORE_COLLECTION: 'inventory',
+  FIRESTORE_DOC: 'rows',
   MIN_COL_WIDTH: 40,
   MAX_COL_WIDTH: 600,
   RESIZE_EDGE_PX: 8,
   MAX_IMAGES: 2,
-  SAVE_DEBOUNCE_MS: 800,               // Firestore向けに少し長めに設定
+  SAVE_DEBOUNCE_MS: 800,
   UNDO_DELETE_LIMIT: 20,
 
   COLUMNS: [
     { key: 'no', label: 'No', width: 48, sticky: 'no', kind: 'index' },
-    { key: 'managementNo', label: '管理番号', width: 120, sticky: 'id', kind: 'digits' },
+    { key: 'managementNo', label: '管理番号', width: 100, sticky: 'id', kind: 'digits' },
     { key: 'listingDate', label: '出品日', width: 130, kind: 'date' },
     { key: 'winningBidDate', label: '落札日', width: 130, kind: 'date' },
     { key: 'paymentDate', label: '入金日', width: 130, kind: 'date' },
     { key: 'itemName', label: '品名', width: 240, kind: 'textarea', thClass: 'col-name' },
-    { key: 'images', label: '画像（2枚まで）', width: 260, kind: 'images', thClass: 'col-images', minWidth: 230 },
+    { key: 'images', label: '画像（2枚まで）', width: 230, kind: 'images', thClass: 'col-images', minWidth: 230 },
     { key: 'purchasePrice', label: '仕入価格', width: 110, kind: 'money', thClass: 'col-money' },
     { key: 'purchaseShipping', label: '仕入送料', width: 110, kind: 'money', thClass: 'col-money' },
     { key: 'purchaseTotal', label: '仕入合計', width: 110, kind: 'calcPurchase', thClass: 'col-money col-calc' },
@@ -28,8 +28,8 @@ const InventoryApp = {
     { key: 'bodyWeight', label: '本体重量', width: 100, kind: 'unit', unit: 'g' },
     { key: 'weight', label: '梱包重量', width: 100, kind: 'unit', unit: 'g' },
     { key: 'profitLoss', label: '粗利', width: 110, kind: 'calcProfit', thClass: 'col-money col-calc' },
-    { key: 'buyerCountry', label: '落札者の国名', width: 140, kind: 'text' },
-    { key: 'buyerName', label: '落札者名', width: 140, kind: 'text' },
+    { key: 'buyerCountry', label: '落札者の国名', width: 140, kind: 'textarea' },
+    { key: 'buyerName', label: '落札者名', width: 140, kind: 'textarea' },
     { key: 'actions', label: '操作', width: 56, kind: 'actions', thClass: 'col-actions' },
   ],
 
@@ -74,7 +74,7 @@ const InventoryApp = {
   saveTimer: null,
   columnWidths: {},
   els: {},
-  db: null,  // Firestoreインスタンス
+  db: null,
 
   get DIGIT_FIELDS() {
     return new Set(this.COLUMNS.filter((c) => c.kind === 'digits' || c.kind === 'money' || c.kind === 'unit').map((c) => c.key));
@@ -121,7 +121,6 @@ const InventoryApp = {
   // =========================================================
   initFirebase() {
     try {
-      // firebase-config.js で定義された firebaseConfig を使用
       if (typeof firebaseConfig === 'undefined') {
         console.error('firebase-config.js が読み込まれていないか、firebaseConfig が未定義です');
         return false;
@@ -142,7 +141,6 @@ const InventoryApp = {
     this.setSaveIndicator('saving');
     clearTimeout(this.saveTimer);
     this.saveTimer = setTimeout(async () => {
-      // Firestore が使えない場合は localStorage にフォールバック
       if (!this.db) {
         try {
           localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.rows));
@@ -155,9 +153,6 @@ const InventoryApp = {
       }
 
       try {
-        // Firestoreの1ドキュメントは最大1MBのため、
-        // 行数が多い場合や画像が多い場合は行ごとにドキュメントを分けてください。
-        // ここでは全行をひとつのドキュメントにまとめるシンプルな実装です。
         await this.db
           .collection(this.FIRESTORE_COLLECTION)
           .doc(this.FIRESTORE_DOC)
@@ -174,7 +169,6 @@ const InventoryApp = {
   // Firestore 読み込み
   // =========================================================
   async loadFromStorage() {
-    // Firestore が使えない場合は localStorage にフォールバック
     if (!this.db) {
       try {
         const raw = localStorage.getItem(this.STORAGE_KEY);
@@ -205,7 +199,6 @@ const InventoryApp = {
       }));
     } catch (err) {
       console.error('Firestore読み込みエラー:', err);
-      // Firestoreが失敗したらlocalStorageから試みる
       try {
         const raw = localStorage.getItem(this.STORAGE_KEY);
         if (!raw) return [];
@@ -217,23 +210,17 @@ const InventoryApp = {
     }
   },
 
-  // =========================================================
-  // 以下はオリジナルから変更なし
-  // =========================================================
-
   async init() {
     this.cacheElements();
     this.buildSummary();
     this.buildTableHead();
     this.initTheme();
     this.columnWidths = this.loadColumnWidths();
-    this.initColumnResize();
     this.initStickySync();
     this.initWheelPassthrough();
     this.initLightbox();
     this.bindHeaderActions();
 
-    // Firebase初期化してからデータ読み込み
     this.initFirebase();
     this.setSaveIndicator('loading');
     this.rows = await this.loadFromStorage();
@@ -251,7 +238,7 @@ const InventoryApp = {
       headRow: this.$('#tableHeadRow'),
       tbody: this.$('#tableBody'),
       table: this.$('#inventoryTable'),
-      wrapper: this.$('.table-wrapper'),
+      wrapper: this.$('#tableWrapper'),
       summaryBar: this.$('#summaryBar'),
       saveIndicator: this.$('#saveIndicator'),
       lightbox: this.$('#imageLightbox'),
@@ -259,6 +246,11 @@ const InventoryApp = {
       themeIcon: this.$('#themeIcon'),
       undoDeleteBtn: this.$('#undoDeleteBtn'),
       redoDeleteBtn: this.$('#redoDeleteBtn'),
+      fixedHeaderWrap: this.$('#fixedHeaderWrap'),
+      fixedHeaderInner: this.$('#fixedHeaderInner'),
+      fixedHeaderTable: this.$('#fixedHeaderTable'),
+      fixedHeaderColgroup: this.$('#fixedHeaderColgroup'),
+      fixedHeaderRow: this.$('#fixedHeaderRow'),
     };
   },
 
@@ -289,33 +281,40 @@ const InventoryApp = {
   },
 
   buildTableHead() {
-    const { colgroup, headRow } = this.els;
+    const { colgroup, headRow, fixedHeaderColgroup, fixedHeaderRow } = this.els;
     if (!colgroup || !headRow) return;
 
-    colgroup.innerHTML = '';
-    headRow.innerHTML = '';
+    [colgroup, fixedHeaderColgroup].forEach((cg) => { if (cg) cg.innerHTML = ''; });
+    [headRow, fixedHeaderRow].forEach((hr) => { if (hr) hr.innerHTML = ''; });
 
     this.COLUMNS.forEach((col) => {
-      const colEl = document.createElement('col');
-      colEl.dataset.col = col.key;
-      colgroup.appendChild(colEl);
+      [colgroup, fixedHeaderColgroup].forEach((cg) => {
+        if (!cg) return;
+        const colEl = document.createElement('col');
+        colEl.dataset.col = col.key;
+        cg.appendChild(colEl);
+      });
 
-      const th = document.createElement('th');
-      th.dataset.col = col.key;
-      th.className = [col.sticky && 'col-sticky', col.sticky && `col-${col.sticky}`, col.thClass].filter(Boolean).join(' ');
-
-      const label = document.createElement('span');
-      label.className = 'th-label';
-      label.textContent = col.label;
-      if (col.sub) {
-        const sub = document.createElement('span');
-        sub.className = 'th-sub';
-        sub.textContent = col.sub;
-        label.appendChild(sub);
-      }
-      th.appendChild(label);
-      headRow.appendChild(th);
+      [headRow, fixedHeaderRow].forEach((hr) => {
+        if (!hr) return;
+        const th = document.createElement('th');
+        th.dataset.col = col.key;
+        th.className = [col.sticky && 'col-sticky', col.sticky && `col-${col.sticky}`, col.thClass].filter(Boolean).join(' ');
+        const label = document.createElement('span');
+        label.className = 'th-label';
+        label.textContent = col.label;
+        if (col.sub) {
+          const sub = document.createElement('span');
+          sub.className = 'th-sub';
+          sub.textContent = col.sub;
+          label.appendChild(sub);
+        }
+        th.appendChild(label);
+        hr.appendChild(th);
+      });
     });
+
+    if (fixedHeaderRow) this.initColumnResizeFixed(fixedHeaderRow);
   },
 
   initTheme() {
@@ -369,9 +368,14 @@ const InventoryApp = {
     return this.$(`#tableColgroup col[data-col="${key}"]`);
   },
 
+  getFixedColEl(key) {
+    return this.$(`#fixedHeaderColgroup col[data-col="${key}"]`);
+  },
+
   syncTableWidth() {
     const total = this.COLUMNS.reduce((sum, { key }) => sum + (this.columnWidths[key] ?? this.DEFAULT_WIDTHS[key]), 0);
     if (this.els.table) this.els.table.style.width = `${total}px`;
+    if (this.els.fixedHeaderTable) this.els.fixedHeaderTable.style.width = `${total}px`;
   },
 
   setColumnWidth(key, widthPx) {
@@ -379,12 +383,12 @@ const InventoryApp = {
     const min = col?.minWidth ?? this.MIN_COL_WIDTH;
     const width = Math.max(min, Math.min(this.MAX_COL_WIDTH, Math.round(widthPx)));
     this.columnWidths[key] = width;
-    const colEl = this.getColEl(key);
-    if (colEl) {
+    [this.getColEl(key), this.getFixedColEl(key)].forEach((colEl) => {
+      if (!colEl) return;
       colEl.style.width = `${width}px`;
       colEl.style.minWidth = `${width}px`;
       colEl.style.maxWidth = `${width}px`;
-    }
+    });
     this.syncTableWidth();
     if (key === 'no') this.updateStickyPositions();
   },
@@ -402,13 +406,43 @@ const InventoryApp = {
     document.documentElement.style.setProperty('--sticky-id-left', `${Math.ceil(width)}px`);
   },
 
+  updateHeaderHeight() {
+    const h = document.querySelector('.app-header')?.getBoundingClientRect().height ?? 0;
+    document.documentElement.style.setProperty('--app-header-height', `${Math.ceil(h)}px`);
+  },
+
   initStickySync() {
-    const { table } = this.els;
+    const { table, wrapper, fixedHeaderInner } = this.els;
     if (!table) return;
-    window.addEventListener('resize', () => this.updateStickyPositions(), { passive: true });
+    this.updateHeaderHeight();
+    window.addEventListener('resize', () => {
+      this.updateHeaderHeight();
+      this.updateStickyPositions();
+    }, { passive: true });
     if (typeof ResizeObserver !== 'undefined') {
       new ResizeObserver(() => this.updateStickyPositions()).observe(table);
+      const header = document.querySelector('.app-header');
+      if (header) new ResizeObserver(() => this.updateHeaderHeight()).observe(header);
     }
+    if (wrapper && fixedHeaderInner) {
+      wrapper.addEventListener('scroll', () => {
+        fixedHeaderInner.scrollLeft = wrapper.scrollLeft;
+      }, { passive: true });
+    }
+  },
+
+  initColumnResizeFixed(fixedHeadRow) {
+    fixedHeadRow.querySelectorAll('th[data-col]').forEach((th) => {
+      th.addEventListener('mousedown', (e) => {
+        const key = th.dataset.col;
+        if (!key || !this.isNearResizeEdge(th, e.clientX)) return;
+        this.startColumnResize(e, key, th);
+      });
+      th.addEventListener('mousemove', (e) => {
+        th.classList.toggle('is-col-resize-hover', this.isNearResizeEdge(th, e.clientX));
+      });
+      th.addEventListener('mouseleave', () => th.classList.remove('is-col-resize-hover'));
+    });
   },
 
   initWheelPassthrough() {
@@ -731,6 +765,59 @@ const InventoryApp = {
     this.saveToStorage();
   },
 
+  getFocusableInputs(table) {
+    const skipKinds = new Set(['index', 'calcPurchase', 'calcProfit', 'actions', 'images']);
+    const orderedKeys = this.COLUMNS.filter((c) => !skipKinds.has(c.kind)).map((c) => c.key);
+
+    const inputs = [];
+    table.querySelectorAll('tbody tr.data-row').forEach((tr) => {
+      orderedKeys.forEach((key) => {
+        const td = tr.querySelector(`td[data-col="${key}"]`);
+        const el = td?.querySelector('input.field-input, textarea.field-input');
+        if (el) inputs.push(el);
+      });
+    });
+    return inputs;
+  },
+
+  getDateSection(input) {
+    const val = input.value;
+    if (!val) return 'year';
+    const parts = val.split('-');
+    const sel = input.selectionStart ?? 0;
+    if (sel <= 4) return 'year';
+    if (sel <= 7) return 'month';
+    return 'day';
+  },
+
+  moveFocus(currentInput, direction) {
+    const table = this.els.table;
+    if (!table) return;
+
+    const inputs = this.getFocusableInputs(table);
+    const idx = inputs.indexOf(currentInput);
+    if (idx === -1) return;
+
+    const nextIdx = idx + direction;
+
+    if (nextIdx >= 0 && nextIdx < inputs.length) {
+      inputs[nextIdx].focus();
+      inputs[nextIdx].select?.();
+      return;
+    }
+
+    if (direction > 0 && nextIdx >= inputs.length) {
+      this.addRow();
+      requestAnimationFrame(() => {
+        const newInputs = this.getFocusableInputs(table);
+        if (newInputs.length > idx + 1) {
+          newInputs[idx + 1].focus();
+          newInputs[idx + 1].select?.();
+        }
+      });
+    }
+  },
+
   bindRowEvents(tr, row, rowIndex) {
     tr.querySelectorAll('.field-input').forEach((input) => {
       const onChange = () => this.handleFieldInput(tr, row, input);
@@ -751,6 +838,36 @@ const InventoryApp = {
         });
       }
 
+      if (input.type === 'date') {
+        input.addEventListener('keydown', (e) => {
+          if (e.key !== 'Enter' && e.key !== 'Tab') return;
+          e.preventDefault();
+          const direction = e.shiftKey ? -1 : 1;
+          const section = this.getDateSection(input);
+          if (direction > 0 && section !== 'day') {
+            input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: false }));
+          } else if (direction < 0 && section !== 'year') {
+            input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: false }));
+          } else {
+            this.moveFocus(input, direction);
+          }
+        });
+        return;
+      }
+
+      input.addEventListener('keydown', (e) => {
+        const isTextarea = input.tagName === 'TEXTAREA';
+        if (e.key === 'Enter') {
+          if (isTextarea && e.shiftKey) return;
+          e.preventDefault();
+          this.moveFocus(input, 1);
+          return;
+        }
+        if (e.key === 'Tab') {
+          e.preventDefault();
+          this.moveFocus(input, e.shiftKey ? -1 : 1);
+        }
+      });
     });
 
     tr.querySelector('.image-input')?.addEventListener('change', (e) => this.handleImageChange(e, row));

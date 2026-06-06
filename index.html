@@ -72,20 +72,10 @@
       <div class="summary-bar" id="summaryBar"></div>
     </header>
 
-    <!-- 固定ヘッダー（table-wrapperの横スクロールと同期） -->
-    <div class="fixed-header-wrap" id="fixedHeaderWrap" aria-hidden="true">
-      <div class="fixed-header-inner" id="fixedHeaderInner">
-        <table class="inventory-table fixed-header-table" id="fixedHeaderTable">
-          <colgroup id="fixedHeaderColgroup"></colgroup>
-          <thead><tr id="fixedHeaderRow"></tr></thead>
-        </table>
-      </div>
-    </div>
-
-    <main class="table-wrapper" id="tableWrapper">
+    <main class="table-wrapper">
       <table class="inventory-table" id="inventoryTable">
         <colgroup id="tableColgroup"></colgroup>
-        <thead class="thead-spacer"><tr id="tableHeadRow"></tr></thead>
+        <thead><tr id="tableHeadRow"></tr></thead>
         <tbody id="tableBody"></tbody>
       </table>
     </main>
@@ -105,9 +95,14 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+
+  <!-- Firebase SDK (v9 compat モード) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+  <!-- ★自分のFirebase設定に書き換えたファイル -->
   <script src="firebase-config.js"></script>
+
   <script src="script.js"></script>
 </body>
 </html>

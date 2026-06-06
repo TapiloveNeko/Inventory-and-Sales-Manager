@@ -24,7 +24,7 @@ const InventoryApp = {
     { key: 'purchaseTotal', label: '仕入合計', width: 110, kind: 'calcPurchase', thClass: 'col-money col-calc' },
     { key: 'sellingPrice', label: '売買価格', width: 110, kind: 'money', thClass: 'col-money' },
     { key: 'sellingShipping', label: '輸出送料', width: 110, kind: 'money', thClass: 'col-money' },
-    { key: 'size', label: '梱包寸法', width: 130, kind: 'text' },
+    { key: 'size', label: '梱包寸法', width: 130, kind: 'textarea' },
     { key: 'bodyWeight', label: '本体重量', width: 100, kind: 'unit', unit: 'g' },
     { key: 'weight', label: '梱包重量', width: 100, kind: 'unit', unit: 'g' },
     { key: 'profitLoss', label: '粗利', width: 110, kind: 'calcProfit', thClass: 'col-money col-calc' },
@@ -216,14 +216,15 @@ const InventoryApp = {
     this.buildTableHead();
     this.initTheme();
     this.columnWidths = this.loadColumnWidths();
+    this.initColumnResize();
     this.initStickySync();
-    this.initWheelPassthrough();
     this.initLightbox();
     this.bindHeaderActions();
 
     this.initFirebase();
     this.setSaveIndicator('loading');
     this.rows = await this.loadFromStorage();
+    this.setSaveIndicator('loaded');
     this.updateHistoryButtons();
     this.renderTable();
   },
@@ -238,7 +239,7 @@ const InventoryApp = {
       headRow: this.$('#tableHeadRow'),
       tbody: this.$('#tableBody'),
       table: this.$('#inventoryTable'),
-      wrapper: this.$('#tableWrapper'),
+      wrapper: this.$('.table-wrapper'),
       summaryBar: this.$('#summaryBar'),
       saveIndicator: this.$('#saveIndicator'),
       lightbox: this.$('#imageLightbox'),
@@ -246,11 +247,6 @@ const InventoryApp = {
       themeIcon: this.$('#themeIcon'),
       undoDeleteBtn: this.$('#undoDeleteBtn'),
       redoDeleteBtn: this.$('#redoDeleteBtn'),
-      fixedHeaderWrap: this.$('#fixedHeaderWrap'),
-      fixedHeaderInner: this.$('#fixedHeaderInner'),
-      fixedHeaderTable: this.$('#fixedHeaderTable'),
-      fixedHeaderColgroup: this.$('#fixedHeaderColgroup'),
-      fixedHeaderRow: this.$('#fixedHeaderRow'),
     };
   },
 
@@ -281,40 +277,33 @@ const InventoryApp = {
   },
 
   buildTableHead() {
-    const { colgroup, headRow, fixedHeaderColgroup, fixedHeaderRow } = this.els;
+    const { colgroup, headRow } = this.els;
     if (!colgroup || !headRow) return;
 
-    [colgroup, fixedHeaderColgroup].forEach((cg) => { if (cg) cg.innerHTML = ''; });
-    [headRow, fixedHeaderRow].forEach((hr) => { if (hr) hr.innerHTML = ''; });
+    colgroup.innerHTML = '';
+    headRow.innerHTML = '';
 
     this.COLUMNS.forEach((col) => {
-      [colgroup, fixedHeaderColgroup].forEach((cg) => {
-        if (!cg) return;
-        const colEl = document.createElement('col');
-        colEl.dataset.col = col.key;
-        cg.appendChild(colEl);
-      });
+      const colEl = document.createElement('col');
+      colEl.dataset.col = col.key;
+      colgroup.appendChild(colEl);
 
-      [headRow, fixedHeaderRow].forEach((hr) => {
-        if (!hr) return;
-        const th = document.createElement('th');
-        th.dataset.col = col.key;
-        th.className = [col.sticky && 'col-sticky', col.sticky && `col-${col.sticky}`, col.thClass].filter(Boolean).join(' ');
-        const label = document.createElement('span');
-        label.className = 'th-label';
-        label.textContent = col.label;
-        if (col.sub) {
-          const sub = document.createElement('span');
-          sub.className = 'th-sub';
-          sub.textContent = col.sub;
-          label.appendChild(sub);
-        }
-        th.appendChild(label);
-        hr.appendChild(th);
-      });
+      const th = document.createElement('th');
+      th.dataset.col = col.key;
+      th.className = [col.sticky && 'col-sticky', col.sticky && `col-${col.sticky}`, col.thClass].filter(Boolean).join(' ');
+
+      const label = document.createElement('span');
+      label.className = 'th-label';
+      label.textContent = col.label;
+      if (col.sub) {
+        const sub = document.createElement('span');
+        sub.className = 'th-sub';
+        sub.textContent = col.sub;
+        label.appendChild(sub);
+      }
+      th.appendChild(label);
+      headRow.appendChild(th);
     });
-
-    if (fixedHeaderRow) this.initColumnResizeFixed(fixedHeaderRow);
   },
 
   initTheme() {
@@ -368,14 +357,9 @@ const InventoryApp = {
     return this.$(`#tableColgroup col[data-col="${key}"]`);
   },
 
-  getFixedColEl(key) {
-    return this.$(`#fixedHeaderColgroup col[data-col="${key}"]`);
-  },
-
   syncTableWidth() {
     const total = this.COLUMNS.reduce((sum, { key }) => sum + (this.columnWidths[key] ?? this.DEFAULT_WIDTHS[key]), 0);
     if (this.els.table) this.els.table.style.width = `${total}px`;
-    if (this.els.fixedHeaderTable) this.els.fixedHeaderTable.style.width = `${total}px`;
   },
 
   setColumnWidth(key, widthPx) {
@@ -383,12 +367,12 @@ const InventoryApp = {
     const min = col?.minWidth ?? this.MIN_COL_WIDTH;
     const width = Math.max(min, Math.min(this.MAX_COL_WIDTH, Math.round(widthPx)));
     this.columnWidths[key] = width;
-    [this.getColEl(key), this.getFixedColEl(key)].forEach((colEl) => {
-      if (!colEl) return;
+    const colEl = this.getColEl(key);
+    if (colEl) {
       colEl.style.width = `${width}px`;
       colEl.style.minWidth = `${width}px`;
       colEl.style.maxWidth = `${width}px`;
-    });
+    }
     this.syncTableWidth();
     if (key === 'no') this.updateStickyPositions();
   },
@@ -412,7 +396,7 @@ const InventoryApp = {
   },
 
   initStickySync() {
-    const { table, wrapper, fixedHeaderInner } = this.els;
+    const { table } = this.els;
     if (!table) return;
     this.updateHeaderHeight();
     window.addEventListener('resize', () => {
@@ -424,44 +408,6 @@ const InventoryApp = {
       const header = document.querySelector('.app-header');
       if (header) new ResizeObserver(() => this.updateHeaderHeight()).observe(header);
     }
-    if (wrapper && fixedHeaderInner) {
-      wrapper.addEventListener('scroll', () => {
-        fixedHeaderInner.scrollLeft = wrapper.scrollLeft;
-      }, { passive: true });
-    }
-  },
-
-  initColumnResizeFixed(fixedHeadRow) {
-    fixedHeadRow.querySelectorAll('th[data-col]').forEach((th) => {
-      th.addEventListener('mousedown', (e) => {
-        const key = th.dataset.col;
-        if (!key || !this.isNearResizeEdge(th, e.clientX)) return;
-        this.startColumnResize(e, key, th);
-      });
-      th.addEventListener('mousemove', (e) => {
-        th.classList.toggle('is-col-resize-hover', this.isNearResizeEdge(th, e.clientX));
-      });
-      th.addEventListener('mouseleave', () => th.classList.remove('is-col-resize-hover'));
-    });
-  },
-
-  initWheelPassthrough() {
-    const { wrapper } = this.els;
-    if (!wrapper) return;
-
-    wrapper.addEventListener(
-      'wheel',
-      (e) => {
-        if (e.ctrlKey || e.metaKey || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
-        const root = document.documentElement;
-        const max = Math.max(0, root.scrollHeight - root.clientHeight);
-        const next = Math.max(0, Math.min(max, root.scrollTop + e.deltaY));
-        const delta = next - root.scrollTop;
-        if (delta) window.scrollBy({ top: delta });
-        e.preventDefault();
-      },
-      { passive: false }
-    );
   },
 
   isNearResizeEdge(th, clientX) {
@@ -574,12 +520,16 @@ const InventoryApp = {
     if (state === 'loading') {
       el.textContent = '読み込み中...';
       el.classList.add('is-saving');
+    } else if (state === 'loaded') {
+      el.textContent = '';
     } else if (state === 'saving') {
       el.textContent = '保存中...';
       el.classList.add('is-saving');
+    } else if (state === 'saved') {
+      el.textContent = '保存済み';
+      el.classList.add('is-saved');
     } else {
-      el.textContent = state === 'error' ? '保存エラー（接続またはデータ容量を確認）' : '保存済み';
-      if (state === 'saved') el.classList.add('is-saved');
+      el.textContent = '保存エラー（接続またはデータ容量を確認）';
     }
   },
 
@@ -781,9 +731,6 @@ const InventoryApp = {
   },
 
   getDateSection(input) {
-    const val = input.value;
-    if (!val) return 'year';
-    const parts = val.split('-');
     const sel = input.selectionStart ?? 0;
     if (sel <= 4) return 'year';
     if (sel <= 7) return 'month';
@@ -1196,7 +1143,7 @@ const InventoryApp = {
     if (!tbody) return;
 
     const saved = preserveScroll && wrapper
-      ? { top: window.scrollY, left: wrapper.scrollLeft }
+      ? { top: wrapper.scrollTop, left: wrapper.scrollLeft }
       : null;
 
     tbody.replaceChildren();
@@ -1212,11 +1159,11 @@ const InventoryApp = {
     requestAnimationFrame(() => {
       this.updateStickyPositions();
       if (!saved) return;
+      wrapper.scrollTop = saved.top;
       wrapper.scrollLeft = saved.left;
-      window.scrollTo({ top: saved.top });
       requestAnimationFrame(() => {
+        wrapper.scrollTop = saved.top;
         wrapper.scrollLeft = saved.left;
-        window.scrollTo({ top: saved.top });
         this.updateStickyPositions();
       });
     });

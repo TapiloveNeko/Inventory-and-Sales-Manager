@@ -404,40 +404,19 @@ body {
 .summary-value.profit-positive { color: var(--profit); }
 .summary-value.profit-negative { color: var(--loss); }
 
-.fixed-header-wrap {
-  position: sticky;
-  top: var(--app-header-height, 0px);
-  z-index: 201;
-  overflow: hidden;
-  background: var(--header-bg);
-  border-left: var(--frame-border);
-  border-right: var(--frame-border);
-  margin: 0 24px;
-}
-
-.fixed-header-inner {
-  overflow: hidden;
-}
-
-.fixed-header-table {
-  border-collapse: separate;
-  border-spacing: 0;
-  table-layout: fixed;
-}
-
-.thead-spacer {
-  visibility: hidden;
-}
-
+/* =====================================================
+   table-wrapper: 縦横スクロール兼用コンテナ
+   height を持つことで thead の sticky が発動する
+   overflow: auto（縦横両方）にすることで sticky が効く
+   ===================================================== */
 .table-wrapper {
-  margin: 0 24px 24px;
-  overflow-x: auto;
-  overflow-y: visible;
+  margin: 16px 24px 24px;
+  height: calc(100vh - var(--app-header-height, 0px) - 48px);
+  overflow: auto;
   overscroll-behavior: none;
   background: var(--surface);
   border: var(--frame-border);
-  border-top: none;
-  border-radius: 0 0 var(--radius) var(--radius);
+  border-radius: var(--radius);
   box-shadow: var(--shadow-lg);
 }
 
@@ -447,7 +426,10 @@ body {
   table-layout: fixed;
 }
 
+/* top: 0 は table-wrapper 内スクロール基準 */
 .inventory-table thead {
+  position: sticky;
+  top: 0;
   z-index: 20;
 }
 
@@ -508,19 +490,20 @@ body {
   box-shadow: var(--sticky-col-edge);
 }
 
+/* thead の sticky 列は thead の z-index(20) より高くする */
 thead .col-sticky {
-  z-index: 202;
+  z-index: 21;
   background: var(--header-gradient);
 }
 
-thead .col-no { left: 0; z-index: 203; }
+thead .col-no { left: 0; z-index: 22; }
 
 thead .col-id {
   left: var(--sticky-id-left, 48px);
   box-shadow: var(--sticky-col-edge), var(--sticky-shadow);
 }
 
-tbody .col-sticky { z-index: 12; background: var(--surface); }
+tbody .col-sticky { z-index: 10; background: var(--surface); }
 tbody .col-no { left: 0; }
 
 tbody .col-id {
@@ -622,7 +605,6 @@ body.col-resizing * { cursor: col-resize !important; }
   -webkit-appearance: none;
   margin: 0;
 }
-
 
 .affix-input-wrap {
   display: flex;
@@ -972,22 +954,14 @@ body.col-resizing * { cursor: col-resize !important; }
 }
 
 @media (max-width: 768px) {
-  html {
-    font-size: 62.5%;
-  }
-
-  body {
-    font-size: 1.1rem;
-  }
-
+  html { font-size: 62.5%; }
+  body { font-size: 1.1rem; }
   .app-header { padding: 0 16px; }
   .app-header::before { margin: 0 -16px; }
-  .fixed-header-wrap { margin: 0 16px; }
-  .table-wrapper { margin: 0 16px 16px; }
+  .table-wrapper { margin: 12px 16px 16px; }
   .header-content { flex-direction: column; }
   .castle-emblem { width: 80px; height: 48px; }
   .header-crest-frame { padding: 8px 20px 6px; }
-
   .app-header h1 { font-size: 1.6rem; }
   .subtitle { font-size: 1.1rem; }
   .btn { font-size: 1.1rem; }

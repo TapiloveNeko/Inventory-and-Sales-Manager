@@ -615,6 +615,7 @@ const InventoryApp = {
         const ta = document.createElement('textarea');
         ta.className = 'field-input field-textarea';
         ta.dataset.field = col.key;
+        ta.autocomplete = 'off';
         ta.rows = 1;
         td.appendChild(ta);
         break;
@@ -803,6 +804,7 @@ const InventoryApp = {
       }
 
       input.addEventListener('keydown', (e) => {
+        if (e.isComposing) return;
         const isTextarea = input.tagName === 'TEXTAREA';
         if (e.key === 'Enter') {
           if (isTextarea && e.shiftKey) return;
@@ -859,22 +861,43 @@ const InventoryApp = {
     }
   },
 
+  compressImage(file, maxSize = 400, quality = 0.7) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > maxSize || height > maxSize) {
+            const ratio = Math.min(maxSize / width, maxSize / height);
+            width = Math.round(width * ratio);
+            height = Math.round(height * ratio);
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  },
+
   handleImageChange(e, row) {
     const remaining = this.MAX_IMAGES - row.images.length;
-    Array.from(e.target.files)
-      .slice(0, remaining)
-      .forEach((file) => {
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          if (row.images.length < this.MAX_IMAGES) {
-            row.images.push(ev.target.result);
-            this.saveToStorage();
-            this.renderTable();
-          }
-        };
-        reader.readAsDataURL(file);
-      });
+    const files = Array.from(e.target.files).slice(0, remaining);
     e.target.value = '';
+    files.forEach((file) => {
+      this.compressImage(file).then((compressed) => {
+        if (row.images.length < this.MAX_IMAGES) {
+          row.images.push(compressed);
+          this.saveToStorage();
+          this.renderTable();
+        }
+      });
+    });
   },
 
   cloneRow(row) {

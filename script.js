@@ -114,9 +114,6 @@ const InventoryApp = {
     });
   },
 
-  // =========================================================
-  // サーバーへの保存
-  // =========================================================
   saveToStorage() {
     this.isDirty = true;
     this.setSaveIndicator('saving');
@@ -138,9 +135,6 @@ const InventoryApp = {
     }, this.SAVE_DEBOUNCE_MS);
   },
 
-  // =========================================================
-  // サーバーからの読み込み
-  // =========================================================
   async loadFromStorage() {
     try {
       const res = await fetch(`${this.API_BASE}/rows`);
@@ -168,7 +162,6 @@ const InventoryApp = {
     this.initLightbox();
     this.initBeforeUnload();
     this.bindHeaderActions();
-
     this.setSaveIndicator('loading');
     this.rows = await this.loadFromStorage();
     this.setSaveIndicator('loaded');

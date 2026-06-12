@@ -69,6 +69,7 @@ const InventoryApp = {
   },
 
   rows: [],
+  isDirty: false,
   deleteUndoStack: [],
   deleteRedoStack: [],
   saveTimer: null,
@@ -138,12 +139,14 @@ const InventoryApp = {
   // Firestore 保存
   // =========================================================
   saveToStorage() {
+    this.isDirty = true;
     this.setSaveIndicator('saving');
     clearTimeout(this.saveTimer);
     this.saveTimer = setTimeout(async () => {
       if (!this.db) {
         try {
           localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.rows));
+          this.isDirty = false;
           this.setSaveIndicator('saved');
         } catch (err) {
           console.error('localStorage保存エラー:', err);
@@ -157,6 +160,7 @@ const InventoryApp = {
           .collection(this.FIRESTORE_COLLECTION)
           .doc(this.FIRESTORE_DOC)
           .set({ rows: this.rows });
+        this.isDirty = false;
         this.setSaveIndicator('saved');
       } catch (err) {
         console.error('Firestore保存エラー:', err);
@@ -219,6 +223,7 @@ const InventoryApp = {
     this.initColumnResize();
     this.initStickySync();
     this.initLightbox();
+    this.initBeforeUnload();
     this.bindHeaderActions();
 
     this.initFirebase();
@@ -1046,6 +1051,14 @@ const InventoryApp = {
     this.saveToStorage();
     this.renderTable();
     this.$(`#tableBody tr.data-row:nth-child(${insertAt + 1})`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  },
+
+  initBeforeUnload() {
+    window.addEventListener('beforeunload', (e) => {
+      if (!this.isDirty) return;
+      e.preventDefault();
+      e.returnValue = '行った変更が保存されない可能性があります。';
+    });
   },
 
   initLightbox() {

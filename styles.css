@@ -690,6 +690,8 @@ body.col-resizing * { cursor: col-resize !important; }
 .image-slot {
   position: relative;
   flex: 0 0 96px;
+  display: grid;
+  place-content: center;
   overflow: hidden;
   background: var(--input-bg);
   border: 2px solid var(--border);

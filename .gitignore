@@ -1,6 +1,3 @@
 node_modules/
 .env
-service-account.json
-firebase-export.json
-import-postgres.js
 .DS_Store

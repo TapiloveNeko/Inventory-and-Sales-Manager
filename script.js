@@ -801,7 +801,7 @@ const InventoryApp = {
     }
   },
 
-  compressImage(file, maxSize = 400, quality = 0.7) {
+  compressImage(file, maxSize = 1200, quality = 0.85) {
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = (ev) => {

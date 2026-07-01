@@ -20,8 +20,11 @@ const InventoryApp = {
     { key: 'purchasePrice', label: '仕入価格', width: 110, kind: 'money', thClass: 'col-money' },
     { key: 'purchaseShipping', label: '仕入送料', width: 110, kind: 'money', thClass: 'col-money' },
     { key: 'purchaseTotal', label: '仕入合計', width: 110, kind: 'calcPurchase', thClass: 'col-money col-calc' },
-    { key: 'sellingPrice', label: '売買価格', width: 110, kind: 'money', thClass: 'col-money' },
+    { key: 'salesPrice', label: '売上価格', width: 110, kind: 'money', thClass: 'col-money' },
     { key: 'sellingShipping', label: '輸出送料', width: 110, kind: 'money', thClass: 'col-money' },
+    { key: 'salesTotal', label: '売上合計', width: 110, kind: 'calcSalesTotal', thClass: 'col-money col-calc' },
+    { key: 'advancedFreight', label: '立替運賃', width: 110, kind: 'digits', thClass: 'col-money' },
+    { key: 'advancedShippingFee', label: '立替送料', width: 110, kind: 'calcAdvancedFee', thClass: 'col-money col-calc' },
     { key: 'size', label: '梱包寸法', width: 130, kind: 'textarea' },
     { key: 'bodyWeight', label: '本体重量', width: 100, kind: 'unit', unit: 'g' },
     { key: 'weight', label: '梱包重量', width: 100, kind: 'unit', unit: 'g' },
@@ -39,7 +42,7 @@ const InventoryApp = {
       label: '売上合計',
       value: (rows) =>
         InventoryApp.formatYen(
-          InventoryApp.sum(rows, (r) => InventoryApp.parseNumber(r.sellingPrice) + InventoryApp.parseNumber(r.sellingShipping))
+          InventoryApp.sum(rows, (r) => InventoryApp.parseNumber(r.salesPrice) + InventoryApp.parseNumber(r.sellingShipping))
         ),
     },
     {
@@ -82,6 +85,10 @@ const InventoryApp = {
     return new Set(this.COLUMNS.filter((c) => c.kind === 'money').map((c) => c.key));
   },
 
+  get CALC_TRIGGER_FIELDS() {
+    return new Set([...this.MONEY_FIELDS, 'advancedFreight']);
+  },
+
   get DEFAULT_WIDTHS() {
     return Object.fromEntries(this.COLUMNS.map((c) => [c.key, c.width]));
   },
@@ -90,12 +97,14 @@ const InventoryApp = {
     const calcGet = {
       calcPurchase: (r) => this.calcPurchaseTotal(r),
       calcProfit: (r) => this.calcProfitLoss(r),
+      calcSalesTotal: (r) => this.calcSalesTotal(r),
+      calcAdvancedFee: (r) => this.calcAdvancedShippingFee(r),
     };
 
     return this.COLUMNS.flatMap((col) => {
       if (col.kind === 'actions') return [];
       if (col.kind === 'index') return [{ header: col.label, get: (_r, i) => i + 1 }];
-      if (col.kind === 'calcPurchase' || col.kind === 'calcProfit') {
+      if (col.kind === 'calcPurchase' || col.kind === 'calcProfit' || col.kind === 'calcSalesTotal' || col.kind === 'calcAdvancedFee') {
         return [{ header: col.label, type: 'number', get: calcGet[col.kind] }];
       }
       if (col.kind === 'images') {
@@ -436,9 +445,17 @@ const InventoryApp = {
     return this.parseNumber(row.purchasePrice) + this.parseNumber(row.purchaseShipping);
   },
 
+  calcSalesTotal(row) {
+    return this.parseNumber(row.salesPrice) + this.parseNumber(row.sellingShipping);
+  },
+
+  calcAdvancedShippingFee(row) {
+    return this.calcSalesTotal(row) - this.parseNumber(row.advancedFreight);
+  },
+
   calcProfitLoss(row) {
     const purchase = this.calcPurchaseTotal(row);
-    const revenue = this.parseNumber(row.sellingPrice) + this.parseNumber(row.sellingShipping);
+    const revenue = this.parseNumber(row.salesPrice) + this.parseNumber(row.sellingShipping);
     if (purchase === 0 && revenue === 0) return null;
     return revenue - purchase;
   },
@@ -446,7 +463,7 @@ const InventoryApp = {
   createEmptyRow() {
     const row = { id: crypto.randomUUID(), images: [] };
     this.COLUMNS.forEach(({ key, kind }) => {
-      if (!['index', 'calcPurchase', 'calcProfit', 'actions', 'images'].includes(kind)) {
+      if (!['index', 'calcPurchase', 'calcProfit', 'calcSalesTotal', 'calcAdvancedFee', 'actions', 'images'].includes(kind)) {
         row[key] = '';
       }
     });
@@ -523,6 +540,8 @@ const InventoryApp = {
 
   updateRowCalcs(tr, row) {
     tr.querySelector('.purchase-total').textContent = this.formatYen(this.calcPurchaseTotal(row));
+    tr.querySelector('.sales-total').textContent = this.formatYen(this.calcSalesTotal(row));
+    tr.querySelector('.advanced-fee').textContent = this.formatYen(this.calcAdvancedShippingFee(row));
     this.setProfitLossCell(tr.querySelector('.profit-loss'), row);
   },
 
@@ -568,6 +587,12 @@ const InventoryApp = {
         break;
       case 'calcPurchase':
         td.appendChild(this.createCalcCell('purchase-total'));
+        break;
+      case 'calcSalesTotal':
+        td.appendChild(this.createCalcCell('sales-total'));
+        break;
+      case 'calcAdvancedFee':
+        td.appendChild(this.createCalcCell('advanced-fee'));
         break;
       case 'calcProfit':
         td.appendChild(this.createCalcCell('profit-loss'));
@@ -648,7 +673,7 @@ const InventoryApp = {
 
     if (input.classList.contains('field-textarea')) this.autoResizeTextarea(input);
 
-    if (this.MONEY_FIELDS.has(field)) {
+    if (this.CALC_TRIGGER_FIELDS.has(field)) {
       this.updateRowCalcs(tr, row);
       this.updateSummary();
     }
@@ -657,7 +682,7 @@ const InventoryApp = {
   },
 
   getFocusableInputs(table) {
-    const skipKinds = new Set(['index', 'calcPurchase', 'calcProfit', 'actions', 'images']);
+    const skipKinds = new Set(['index', 'calcPurchase', 'calcProfit', 'calcSalesTotal', 'calcAdvancedFee', 'actions', 'images']);
     const orderedKeys = this.COLUMNS.filter((c) => !skipKinds.has(c.kind)).map((c) => c.key);
 
     const inputs = [];

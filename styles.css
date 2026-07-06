@@ -642,6 +642,21 @@ body.col-resizing * { cursor: col-resize !important; }
   text-transform: none;
 }
 
+.affix-input-wrap.affix-negative {
+  background: color-mix(in srgb, var(--loss-bg) 55%, var(--input-bg));
+  border-color: color-mix(in srgb, var(--loss) 35%, var(--border-strong));
+}
+
+.affix-input-wrap.affix-negative:focus-within {
+  border-color: var(--loss);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--loss) 25%, transparent), var(--inset-shadow);
+}
+
+.affix-input-wrap.affix-negative .input-affix {
+  color: var(--loss);
+  font-weight: 700;
+}
+
 .calc-value {
   display: block;
   padding: 6px 8px;
@@ -921,6 +936,10 @@ body.col-resizing * { cursor: col-resize !important; }
   .affix-input-wrap:hover {
     background: var(--surface-raised);
     border-color: var(--roof-light);
+  }
+
+  .affix-input-wrap.affix-negative:hover {
+    border-color: var(--loss);
   }
 
   .image-slot:hover .image-zoom-icon { opacity: 1; }

@@ -23,7 +23,7 @@ const InventoryApp = {
     { key: 'salesPrice', label: '売上価格', width: 110, kind: 'money', thClass: 'col-money' },
     { key: 'sellingShipping', label: '輸出送料', width: 110, kind: 'money', thClass: 'col-money' },
     { key: 'salesTotal', label: '売上合計', width: 110, kind: 'calcSalesTotal', thClass: 'col-money col-calc' },
-    { key: 'advancedShippingFee', label: '立替送料', width: 110, kind: 'digits', thClass: 'col-money' },
+    { key: 'advancedShippingFee', label: '立替送料', width: 110, kind: 'negativeMoney', thClass: 'col-money' },
     { key: 'profitLoss', label: '粗利', width: 110, kind: 'calcProfit', thClass: 'col-money col-calc' },
     { key: 'bodyWeight', label: '本体重量', width: 100, kind: 'unit', unit: 'g' },
     { key: 'weight', label: '梱包重量', width: 100, kind: 'unit', unit: 'g' },
@@ -76,7 +76,11 @@ const InventoryApp = {
   els: {},
 
   get DIGIT_FIELDS() {
-    return new Set(this.COLUMNS.filter((c) => c.kind === 'digits' || c.kind === 'money' || c.kind === 'unit').map((c) => c.key));
+    return new Set(
+      this.COLUMNS.filter((c) => c.kind === 'digits' || c.kind === 'money' || c.kind === 'unit' || c.kind === 'negativeMoney').map(
+        (c) => c.key
+      )
+    );
   },
 
   get MONEY_FIELDS() {
@@ -113,7 +117,7 @@ const InventoryApp = {
         }));
       }
       if (col.kind === 'unit') return [{ header: `${col.label}(${col.unit})`, type: 'number', key: col.key }];
-      if (col.kind === 'money' || col.kind === 'digits') {
+      if (col.kind === 'money' || col.kind === 'digits' || col.kind === 'negativeMoney') {
         return [{ header: col.sub ? `${col.label}${col.sub}` : col.label, type: 'number', key: col.key }];
       }
       return [{ header: col.label, key: col.key }];
@@ -516,9 +520,10 @@ const InventoryApp = {
     return input;
   },
 
-  createAffixInput(field, affix, position = 'prefix') {
+  createAffixInput(field, affix, position = 'prefix', extraClass = null) {
     const wrap = document.createElement('div');
     wrap.className = 'affix-input-wrap';
+    if (extraClass) wrap.classList.add(extraClass);
     const input = this.createInput(field, { digits: true });
     const span = document.createElement('span');
     span.className = 'input-affix';
@@ -573,6 +578,9 @@ const InventoryApp = {
       }
       case 'money':
         td.appendChild(this.createAffixInput(col.key, '¥', 'prefix'));
+        break;
+      case 'negativeMoney':
+        td.appendChild(this.createAffixInput(col.key, '-¥', 'prefix', 'affix-negative'));
         break;
       case 'unit':
         td.appendChild(this.createAffixInput(col.key, col.unit, 'suffix'));

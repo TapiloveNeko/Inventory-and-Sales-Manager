@@ -509,7 +509,7 @@ calcProfitLoss(row) {
     const pl = this.calcProfitLoss(row);
     cell.textContent = this.formatSignedYen(pl);
     cell.classList.remove('is-profit', 'is-loss', 'is-neutral');
-    cell.classList.add(pl === null ? 'is-neutral' : pl >= 0 ? 'is-profit' : 'is-loss');
+    cell.classList.add(pl === null || pl === 0 ? 'is-neutral' : pl > 0 ? 'is-profit' : 'is-loss');
   },
 
   createInput(field, { digits = false, type = 'text', className = 'field-input' } = {}) {

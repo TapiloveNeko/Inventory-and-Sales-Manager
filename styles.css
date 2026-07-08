@@ -681,7 +681,7 @@ body.col-resizing * { cursor: col-resize !important; }
   font-weight: 700;
 }
 
-.profit-loss.is-neutral { color: var(--text-muted); }
+.profit-loss.is-neutral { color: var(--text); }
 
 .image-upload-area {
   display: block;

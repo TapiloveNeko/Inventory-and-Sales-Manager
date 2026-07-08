@@ -42,6 +42,10 @@ const InventoryApp = {
         InventoryApp.formatYen(
           InventoryApp.sum(rows, (r) => InventoryApp.parseNumber(r.salesPrice) + InventoryApp.parseNumber(r.sellingShipping))
         ),
+      className: (rows) => {
+        const total = InventoryApp.sum(rows, (r) => InventoryApp.parseNumber(r.salesPrice) + InventoryApp.parseNumber(r.sellingShipping));
+        return total > 0 ? 'profit-positive' : '';
+      },
     },
     {
       id: 'totalProfit',
@@ -450,12 +454,13 @@ const InventoryApp = {
     return this.parseNumber(row.salesPrice) + this.parseNumber(row.sellingShipping);
   },
 
-  calcProfitLoss(row) {
-    const revenue = this.calcSalesTotal(row);
-    const advancedShippingFee = this.parseNumber(row.advancedShippingFee);
-    if (revenue === 0 && advancedShippingFee === 0) return null;
-    return revenue - advancedShippingFee;
-  },
+calcProfitLoss(row) {
+  const purchaseTotal = this.calcPurchaseTotal(row);
+  const salesTotal = this.calcSalesTotal(row);
+  const advancedShippingFee = this.parseNumber(row.advancedShippingFee);
+  if (purchaseTotal === 0 && salesTotal === 0 && advancedShippingFee === 0) return null;
+  return purchaseTotal - (salesTotal - advancedShippingFee);
+},
 
   createEmptyRow() {
     const row = { id: crypto.randomUUID(), images: [] };
@@ -537,8 +542,11 @@ const InventoryApp = {
   },
 
   updateRowCalcs(tr, row) {
+    const salesTotal = this.calcSalesTotal(row);
     tr.querySelector('.purchase-total').textContent = this.formatYen(this.calcPurchaseTotal(row));
-    tr.querySelector('.sales-total').textContent = this.formatYen(this.calcSalesTotal(row));
+    const salesEl = tr.querySelector('.sales-total');
+    salesEl.textContent = this.formatYen(salesTotal);
+    salesEl.classList.toggle('is-positive', salesTotal > 0);
     this.setProfitLossCell(tr.querySelector('.profit-loss'), row);
   },
 

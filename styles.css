@@ -92,7 +92,7 @@
   --primary: #a83232;
   --primary-hover: #c04040;
   --primary-light: #3a2020;
-  --profit: #e8dcc8;
+  --profit: #6ecf8a;
   --loss: #e07070;
   --loss-bg: #3a1818;
   --profit-bg: #1a3020;
@@ -664,20 +664,21 @@ body.col-resizing * { cursor: col-resize !important; }
   font-variant-numeric: tabular-nums;
 }
 
+.calc-value.is-positive {
+  color: var(--profit);
+  font-weight: 700;
+}
+
 .profit-loss { font-size: 1.3rem; }
 
 .profit-loss.is-profit {
   color: var(--profit);
-  background: var(--profit-bg);
-  border: 1px solid color-mix(in srgb, var(--profit) 25%, transparent);
-  border-radius: var(--radius-sm);
+  font-weight: 700;
 }
 
 .profit-loss.is-loss {
   color: var(--loss);
-  background: var(--loss-bg);
-  border: 1px solid color-mix(in srgb, var(--loss) 25%, transparent);
-  border-radius: var(--radius-sm);
+  font-weight: 700;
 }
 
 .profit-loss.is-neutral { color: var(--text-muted); }

@@ -459,7 +459,7 @@ calcProfitLoss(row) {
   const salesTotal = this.calcSalesTotal(row);
   const advancedShippingFee = this.parseNumber(row.advancedShippingFee);
   if (purchaseTotal === 0 && salesTotal === 0 && advancedShippingFee === 0) return null;
-  return purchaseTotal - (salesTotal - advancedShippingFee);
+  return (salesTotal - advancedShippingFee) - purchaseTotal;
 },
 
   createEmptyRow() {

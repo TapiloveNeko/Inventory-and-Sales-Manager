@@ -344,23 +344,12 @@ const InventoryApp = {
     document.documentElement.style.setProperty('--sticky-id-left', `${Math.ceil(width)}px`);
   },
 
-  updateHeaderHeight() {
-    const h = document.querySelector('.app-header')?.getBoundingClientRect().height ?? 0;
-    document.documentElement.style.setProperty('--app-header-height', `${Math.ceil(h)}px`);
-  },
-
   initStickySync() {
     const { table } = this.els;
     if (!table) return;
-    this.updateHeaderHeight();
-    window.addEventListener('resize', () => {
-      this.updateHeaderHeight();
-      this.updateStickyPositions();
-    }, { passive: true });
+    window.addEventListener('resize', () => this.updateStickyPositions(), { passive: true });
     if (typeof ResizeObserver !== 'undefined') {
       new ResizeObserver(() => this.updateStickyPositions()).observe(table);
-      const header = document.querySelector('.app-header');
-      if (header) new ResizeObserver(() => this.updateHeaderHeight()).observe(header);
     }
   },
 

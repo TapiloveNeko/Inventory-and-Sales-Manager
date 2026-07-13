@@ -15,7 +15,6 @@
   --sticky-id-left: 48px;
   --sticky-col-edge: inset -1px 0 0 0 var(--col-divider);
   --inset-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.06);
-  --app-header-height: 0px;
 }
 
 :root,
@@ -158,7 +157,7 @@ body {
 .app {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
 }
 
 .app-header {
@@ -171,38 +170,16 @@ body {
   box-shadow: var(--shadow);
 }
 
-.app-header::before {
-  content: '';
-  display: block;
-  height: 12px;
-  margin: 0 -24px;
-  background: repeating-linear-gradient(90deg, var(--crenel-base) 0 10px, var(--crenel-gap) 10px 18px);
-  border-bottom: 2px solid var(--roof-light);
-}
-
 .header-crest {
-  display: flex;
-  justify-content: center;
-  margin-top: -1px;
-}
-
-.header-crest-frame {
-  padding: 10px 28px 8px;
-  background: var(--surface);
-  border: 2px solid var(--roof);
-  border-top: none;
-  border-radius: 0 0 10px 10px;
-  box-shadow: 0 4px 16px rgba(26, 58, 92, 0.12);
-}
-
-[data-theme="dark"] .header-crest-frame {
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  grid-area: crest;
+  justify-self: center;
 }
 
 .castle-emblem {
   display: block;
-  width: 96px;
-  height: 58px;
+  width: clamp(60px, 7vw, 116px);
+  height: auto;
+  aspect-ratio: 120 / 72;
   filter: drop-shadow(0 3px 6px rgba(26, 58, 92, 0.18));
 }
 
@@ -242,15 +219,21 @@ body {
 .castle-emblem .castle-flag { fill: var(--castle-flag); }
 
 .header-content {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 12px 0 20px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-areas: "title crest actions";
+  align-items: center;
+  column-gap: 16px;
+  row-gap: 8px;
+  padding: 16px 0 20px;
 }
 
 .header-title-block {
+  grid-area: title;
+  min-width: 0;
+}
+
+.header-title-text {
   padding-left: 16px;
   border-left: 3px solid var(--roof);
 }
@@ -270,10 +253,13 @@ body {
 }
 
 .header-actions {
+  grid-area: actions;
   display: flex;
-  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 }
 
 .btn {
@@ -364,7 +350,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  padding-bottom: 16px;
+  margin-top: 12px;
 }
 
 .summary-item {
@@ -410,12 +396,11 @@ body {
    overflow: auto（縦横両方）にすることで sticky が効く
    ===================================================== */
 .table-wrapper {
-  margin: 16px 24px 24px;
-  height: calc(100vh - var(--app-header-height, 0px) - 48px);
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: auto;
   overscroll-behavior: none;
   background: var(--surface);
-  border: var(--frame-border);
   border-radius: var(--radius);
   box-shadow: var(--shadow-lg);
 }
@@ -979,11 +964,15 @@ body.col-resizing * { cursor: col-resize !important; }
   html { font-size: 62.5%; }
   body { font-size: 1.1rem; }
   .app-header { padding: 0 16px; }
-  .app-header::before { margin: 0 -16px; }
-  .table-wrapper { margin: 12px 16px 16px; }
-  .header-content { flex-direction: column; }
-  .castle-emblem { width: 80px; height: 48px; }
-  .header-crest-frame { padding: 8px 20px 6px; }
+  .header-content {
+    grid-template-columns: 1fr;
+    grid-template-areas: "crest" "title" "actions";
+    justify-items: center;
+  }
+  .header-title-block { text-align: center; }
+  .header-title-text { border-left: none; padding-left: 0; }
+  .header-actions { justify-content: center; }
+  .castle-emblem { width: clamp(44px, 16vw, 64px); }
   .app-header h1 { font-size: 1.6rem; }
   .subtitle { font-size: 1.1rem; }
   .btn { font-size: 1.1rem; }

@@ -17,8 +17,8 @@
   <div class="castle-bg" aria-hidden="true"></div>
   <div class="app">
     <header class="app-header">
-      <div class="header-crest" aria-hidden="true">
-        <div class="header-crest-frame">
+      <div class="header-content">
+        <div class="header-crest" aria-hidden="true">
           <svg class="castle-emblem" viewBox="0 0 120 72" fill="none" xmlns="http://www.w3.org/2000/svg">
             <ellipse cx="60" cy="68" rx="46" ry="4" fill="var(--castle-shadow)" opacity="0.35"/>
             <path class="castle-roof-main" d="M18 38 L60 14 L102 38 V42 H18 Z"/>
@@ -45,11 +45,12 @@
             <path class="castle-flag" d="M60 6 L72 9 V15 L60 12 Z"/>
           </svg>
         </div>
-      </div>
-      <div class="header-content">
         <div class="header-title-block">
-          <h1>在庫・売上管理</h1>
-          <p class="subtitle">仕入・売上を一覧で管理し、粗利を自動計算します</p>
+          <div class="header-title-text">
+            <h1>在庫・売上管理</h1>
+            <p class="subtitle">仕入・売上を一覧で管理し、粗利を自動計算します</p>
+          </div>
+          <div class="summary-bar" id="summaryBar"></div>
         </div>
         <div class="header-actions">
           <div class="history-actions">
@@ -69,7 +70,6 @@
           <button type="button" id="themeToggle" class="btn-theme" aria-label="テーマを切り替え"><span id="themeIcon">☀️</span></button>
         </div>
       </div>
-      <div class="summary-bar" id="summaryBar"></div>
     </header>
 
     <main class="table-wrapper">

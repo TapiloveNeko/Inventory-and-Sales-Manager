@@ -37,8 +37,8 @@
   --primary: #1e4080;
   --primary-hover: #163366;
   --primary-light: #dce8f8;
-  --profit: #1a4a32;
-  --loss: #8b1a1a;
+  --profit: #6ecf8a;
+  --loss: #e07070;
   --loss-bg: #fce8e8;
   --profit-bg: #e4f2ea;
   --calc-bg: #eef4fb;
@@ -840,15 +840,22 @@ body.col-resizing * { cursor: col-resize !important; }
   text-align: center;
 }
 
-.app-footer {
-  padding: 8px 24px 20px;
-  text-align: right;
+.theme-toggle-block {
+  position: relative;
 }
 
 .save-indicator {
-  font: 600 1.2rem var(--font-display);
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  margin-bottom: 14px;
+  font: 600 1.1rem var(--font-display);
   letter-spacing: 0.08em;
   color: var(--text-muted);
+  white-space: nowrap;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .save-indicator.is-saving { color: var(--accent); }

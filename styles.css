@@ -499,13 +499,6 @@ tbody .col-id {
 .col-no,
 .row-number { text-align: center; }
 
-tbody td.col-calc { background: var(--calc-bg) !important; }
-
-thead th.col-calc {
-  background: var(--header-gradient) !important;
-  color: var(--header-text);
-}
-
 .col-actions { text-align: center; }
 
 .row-actions {
@@ -844,6 +837,13 @@ body.col-resizing * { cursor: col-resize !important; }
   position: relative;
 }
 
+#scrollToBottomBtn {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 6px;
+}
+
 .save-indicator {
   position: absolute;
   bottom: 100%;
@@ -908,8 +908,7 @@ body.col-resizing * { cursor: col-resize !important; }
     border-color: var(--roof-light);
   }
 
-  .data-row:hover td,
-  .data-row:hover td.col-calc {
+  .data-row:hover td {
     background: var(--row-hover) !important;
   }
 

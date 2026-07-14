@@ -19,12 +19,12 @@ const InventoryApp = {
     { key: 'images', label: '画像（2枚まで）', width: 230, kind: 'images', thClass: 'col-images', minWidth: 230 },
     { key: 'purchasePrice', label: '仕入価格', width: 110, kind: 'money', thClass: 'col-money' },
     { key: 'purchaseShipping', label: '仕入送料', width: 110, kind: 'money', thClass: 'col-money' },
-    { key: 'purchaseTotal', label: '仕入合計', width: 110, kind: 'calcPurchase', thClass: 'col-money col-calc' },
+    { key: 'purchaseTotal', label: '仕入合計', width: 110, kind: 'calcPurchase', thClass: 'col-money' },
     { key: 'salesPrice', label: '売上価格', width: 110, kind: 'money', thClass: 'col-money' },
     { key: 'sellingShipping', label: '輸出送料', width: 110, kind: 'money', thClass: 'col-money' },
-    { key: 'salesTotal', label: '売上合計', width: 110, kind: 'calcSalesTotal', thClass: 'col-money col-calc' },
+    { key: 'salesTotal', label: '売上合計', width: 110, kind: 'calcSalesTotal', thClass: 'col-money' },
     { key: 'advancedShippingFee', label: '立替送料', width: 110, kind: 'negativeMoney', thClass: 'col-money' },
-    { key: 'profitLoss', label: '粗利', width: 110, kind: 'calcProfit', thClass: 'col-money col-calc' },
+    { key: 'profitLoss', label: '粗利', width: 110, kind: 'calcProfit', thClass: 'col-money' },
     { key: 'bodyWeight', label: '本体重量', width: 100, kind: 'unit', unit: 'g' },
     { key: 'weight', label: '梱包重量', width: 100, kind: 'unit', unit: 'g' },
     { key: 'buyerCountry', label: '落札者の国名', width: 140, kind: 'textarea' },
@@ -212,6 +212,7 @@ const InventoryApp = {
       exportExcelBtn: () => this.exportToExcel(),
       resetColWidthsBtn: () => this.resetColumnWidths(),
       themeToggle: () => this.toggleTheme(),
+      scrollToBottomBtn: () => this.els.wrapper?.scrollTo({ top: this.els.wrapper.scrollHeight, behavior: 'smooth' }),
     };
     Object.entries(map).forEach(([id, fn]) => {
       document.getElementById(id)?.addEventListener('click', fn);

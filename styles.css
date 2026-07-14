@@ -846,9 +846,9 @@ body.col-resizing * { cursor: col-resize !important; }
 
 .save-indicator {
   position: absolute;
-  bottom: 100%;
-  right: 0;
-  margin-bottom: 14px;
+  top: 10px;
+  right: 20px;
+  z-index: 1;
   font: 600 1.1rem var(--font-display);
   letter-spacing: 0.08em;
   color: var(--text-muted);
@@ -992,4 +992,15 @@ body.col-resizing * { cursor: col-resize !important; }
   .input-affix { font-size: 1.1rem; }
   .image-add-label { font-size: 1.1rem; }
   .save-indicator { font-size: 1.1rem; }
+
+  #scrollToBottomBtn {
+    position: static;
+    margin-top: 0;
+    margin-left: 6px;
+  }
+
+  .theme-toggle-block {
+    display: flex;
+    align-items: center;
+  }
 }
